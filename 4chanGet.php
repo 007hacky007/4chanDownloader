@@ -53,6 +53,10 @@ class chanGet {
 
             $this->postCount++;
             $this->files[$post->tim . $post->ext] = true;
+            if(!isset($cr)) {
+                echo "\r";
+                $cr = true;
+            }
             printf('[%s] Downloading %s... ', $this->postCount, $post->tim . $post->ext);
             try {
                 downloader::fetchFile($this->board, $post->tim . $post->ext, $this->semantic_url);
