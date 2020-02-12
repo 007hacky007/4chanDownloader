@@ -15,6 +15,7 @@ class chanGet {
     private $updateTime = 10; // in seconds
     private $postCount = 0;
     private $semantic_url = "";
+    private $files = [];
 
     const YEAR_SECONDS=31556926;
 
@@ -47,10 +48,11 @@ class chanGet {
     private function fetchAllPosts(array $posts)
     {
         foreach ($posts as $post) {
-            if(!isset($post->filename))
+            if(!isset($post->filename) || isset($this->files[$post->tim . $post->ext]))
                 continue;
 
             $this->postCount++;
+            $this->files[$post->tim . $post->ext] = true;
             printf('[%s] Downloading %s... ', $this->postCount, $post->tim . $post->ext);
             try {
                 downloader::fetchFile($this->board, $post->tim . $post->ext, $this->semantic_url);
@@ -131,7 +133,7 @@ class downloader {
 
     private static function getDate(string $header): string
     {
-        $t = explode('Date: ', $header);
+        $t = explode('Last-Modified: ', $header);
         $t2 = explode("\r\n", $t[1]);
 
         return $t2[0];
