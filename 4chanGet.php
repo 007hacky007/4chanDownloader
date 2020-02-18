@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 try {
@@ -9,6 +10,7 @@ try {
 
 // TODO: track total post count
 // TODO: convert webm to mp4
+// TODO: possibility to watch more threads at once (list of active threads to watch)
 class chanGet {
     private $board;
     private $thread;
