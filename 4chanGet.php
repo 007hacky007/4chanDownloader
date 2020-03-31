@@ -139,10 +139,9 @@ class downloader {
 
     private static function getDate(string $header): string
     {
-        $t = explode('Last-Modified: ', $header);
-        $t2 = explode("\r\n", $t[1]);
+	preg_match('/^[lL]ast-modified: (.*)$/m', $header, $matches);
 
-        return $t2[0];
+        return $header[1];
     }
 
     public static function fetchFile(string $board, string $filename, string $dlDir)
