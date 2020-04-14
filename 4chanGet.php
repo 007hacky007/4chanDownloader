@@ -141,7 +141,7 @@ class downloader {
     {
 	preg_match('/^[lL]ast-modified: (.*)$/m', $header, $matches);
 
-        return $header[1];
+        return $matches[1];
     }
 
     public static function fetchFile(string $board, string $filename, string $dlDir)
