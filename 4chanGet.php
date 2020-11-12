@@ -12,6 +12,7 @@ try {
 // TODO: convert webm to mp4
 // TODO: possibility to watch more threads at once (list of active threads to watch)
 class chanGet {
+    private $domain;
     private $board;
     private $thread;
     private $updateTime = 10; // in seconds
@@ -36,6 +37,7 @@ class chanGet {
         if(!isset($t[3]) || !isset($t[5]))
             throw new Exception('Malformed URL. Example URL: https://boards.4chan.org/wg/thread/123456789');
 
+        $this->domain = $t[2];
         $this->board = $t[3];
         $this->thread = $t[5];
     }
@@ -61,7 +63,7 @@ class chanGet {
             }
             printf('[%s] Downloading %s... ', $this->postCount, $post->tim . $post->ext);
             try {
-                downloader::fetchFile($this->board, $post->tim . $post->ext, $this->semantic_url);
+                downloader::fetchFile(sprintf('https://i.4cdn.org/%s/%s', $post->board, $post->tim . $post->ext), $post->tim . $post->ext, $this->semantic_url);
                 echo "OK\n";
             } catch (Throwable $e){
                 echo $e->getMessage() . PHP_EOL;
@@ -71,10 +73,21 @@ class chanGet {
 
     public function get()
     {
-        while(true) {
-            list($result, $http_code, $ts) = downloader::fetch($this->board, $this->thread, (isset($ts) ? $ts : time() - chanGet::YEAR_SECONDS));
-            if($http_code === 200) {
-                if($this->semantic_url === "") {
+        if($this->domain === 'archived.moe')
+        {
+            $this->getArchiveOnce();
+            die();
+        }
+        $this->get4chanLoop();
+    }
+
+    private function get4chanLoop(): void
+    {
+        $ts = time();
+        while (true) {
+            list($result, $http_code, $ts) = downloader::fetch($this->board, $this->thread, $ts - chanGet::YEAR_SECONDS);
+            if ($http_code === 200) {
+                if ($this->semantic_url === "") {
                     $this->semantic_url = $result->posts[0]->semantic_url;
                     chanGet::createDlDir($this->semantic_url);
                 }
@@ -85,6 +98,26 @@ class chanGet {
                 echo 'Unknown HTTP response! (' . $http_code . ')' . PHP_EOL;
             }
             sleep($this->updateTime);
+        }
+    }
+
+    private function getArchiveOnce(): void
+    {
+        $t = file_get_contents(sprintf('https://%s/%s/thread/%s/', $this->domain, $this->board, $this->thread));
+        $re = '/(<a href="(?P<url>[\S]{1,})" class="post_file_filename"|<a class="post_file_filename" href="(?P<url2>[\S]{1,})")/m';
+        preg_match_all($re, $t, $matches, PREG_SET_ORDER, 0);
+        if(count($matches) > 0)
+            chanGet::createDlDir($this->thread);
+
+        foreach ($matches as $postCount => $post){
+            $url = empty($post['url']) ? $post['url2'] : $post['url'];
+            printf('[%s] Downloading %s... ', $postCount + 1, basename($url));
+            try {
+                downloader::fetchFile(sprintf('https://thebarchive.com/b/full_image/%s', basename($url)), basename($url), $this->thread);
+                echo "OK\n";
+            } catch (Throwable $e){
+                echo $e->getMessage() . PHP_EOL;
+            }
         }
     }
 }
@@ -144,12 +177,12 @@ class downloader {
         return $matches[1];
     }
 
-    public static function fetchFile(string $board, string $filename, string $dlDir)
+    public static function fetchFile(string $url, string $filename, string $dlDir)
     {
         if(file_exists($dlDir . '/' . $filename))
             throw new Exception('file already exists');
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, sprintf('https://i.4cdn.org/%s/%s', $board, $filename));
+        curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $headers[] = 'Authority: i.4cdn.org';
         $headers[] = 'Cache-Control: max-age=0';
@@ -164,6 +197,7 @@ class downloader {
         $headers[] = 'Referer: https://boards.4chan.org/';
         $headers[] = 'Accept-Language: en-US,cs;q=0.9,en;q=0.8';
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
         $st = curl_exec($ch);
         if (curl_errno($ch)) {
