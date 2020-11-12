@@ -11,7 +11,8 @@ try {
 // TODO: track total post count
 // TODO: convert webm to mp4
 // TODO: possibility to watch more threads at once (list of active threads to watch)
-class chanGet {
+class chanGet
+{
     private $domain;
     private $board;
     private $thread;
@@ -20,7 +21,7 @@ class chanGet {
     private $semantic_url = "";
     private $files = [];
 
-    const YEAR_SECONDS=31556926;
+    const YEAR_SECONDS = 31556926;
 
     public function __construct()
     {
@@ -30,11 +31,11 @@ class chanGet {
     private function getInput()
     {
         global $argv;
-        if(!isset($argv[1]))
-            throw new Exception('Usage: ' . $argv[0] .' <4chan thread url>');
+        if (!isset($argv[1]))
+            throw new Exception('Usage: ' . $argv[0] . ' <4chan thread url>');
 
         $t = explode('/', $argv[1]);
-        if(!isset($t[3]) || !isset($t[5]))
+        if (!isset($t[3]) || !isset($t[5]))
             throw new Exception('Malformed URL. Example URL: https://boards.4chan.org/wg/thread/123456789');
 
         $this->domain = $t[2];
@@ -44,20 +45,20 @@ class chanGet {
 
     private static function createDlDir(string $dir)
     {
-        if($dir === "")
+        if ($dir === "")
             throw new Exception('Could not get download dir name');
-        if(!is_dir("./$dir")) mkdir("./$dir");
+        if (!is_dir("./$dir")) mkdir("./$dir");
     }
 
     private function fetchAllPosts(array $posts)
     {
         foreach ($posts as $post) {
-            if(!isset($post->filename) || isset($this->files[$post->tim . $post->ext]))
+            if (!isset($post->filename) || isset($this->files[$post->tim . $post->ext]))
                 continue;
 
             $this->postCount++;
             $this->files[$post->tim . $post->ext] = true;
-            if(!isset($cr)) {
+            if (!isset($cr)) {
                 echo "\r";
                 $cr = true;
             }
@@ -65,7 +66,7 @@ class chanGet {
             try {
                 downloader::fetchFile(sprintf('https://i.4cdn.org/%s/%s', $post->board, $post->tim . $post->ext), $post->tim . $post->ext, $this->semantic_url);
                 echo "OK\n";
-            } catch (Throwable $e){
+            } catch (Throwable $e) {
                 echo $e->getMessage() . PHP_EOL;
             }
         }
@@ -73,8 +74,7 @@ class chanGet {
 
     public function get()
     {
-        if($this->domain === 'archived.moe')
-        {
+        if ($this->domain === 'archived.moe') {
             $this->getArchiveOnce();
             die();
         }
@@ -106,23 +106,24 @@ class chanGet {
         $t = file_get_contents(sprintf('https://%s/%s/thread/%s/', $this->domain, $this->board, $this->thread));
         $re = '/(<a href="(?P<url>[\S]{1,})" class="post_file_filename"|<a class="post_file_filename" href="(?P<url2>[\S]{1,})")/m';
         preg_match_all($re, $t, $matches, PREG_SET_ORDER, 0);
-        if(count($matches) > 0)
+        if (count($matches) > 0)
             chanGet::createDlDir($this->thread);
 
-        foreach ($matches as $postCount => $post){
+        foreach ($matches as $postCount => $post) {
             $url = empty($post['url']) ? $post['url2'] : $post['url'];
             printf('[%s] Downloading %s... ', $postCount + 1, basename($url));
             try {
                 downloader::fetchFile(sprintf('https://thebarchive.com/b/full_image/%s', basename($url)), basename($url), $this->thread);
                 echo "OK\n";
-            } catch (Throwable $e){
+            } catch (Throwable $e) {
                 echo $e->getMessage() . PHP_EOL;
             }
         }
     }
 }
 
-class downloader {
+class downloader
+{
     public static function fetch(string $board, string $thread, int $timestamp = 0): array
     {
         $ch = curl_init();
@@ -159,8 +160,8 @@ class downloader {
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         curl_close($ch);
-        if($http_code === 200) {
-            if(($result = json_decode($body)) === false)
+        if ($http_code === 200) {
+            if (($result = json_decode($body)) === false)
                 throw new Exception('Failed to json_decode curl result: ' . $result);
         } elseif ($http_code === 404) {
             throw new Exception('Thread has been deleted');
@@ -172,14 +173,14 @@ class downloader {
 
     private static function getDate(string $header): string
     {
-	preg_match('/^[lL]ast-modified: (.*)$/m', $header, $matches);
+        preg_match('/^[lL]ast-modified: (.*)$/m', $header, $matches);
 
         return $matches[1];
     }
 
     public static function fetchFile(string $url, string $filename, string $dlDir)
     {
-        if(file_exists($dlDir . '/' . $filename))
+        if (file_exists($dlDir . '/' . $filename))
             throw new Exception('file already exists');
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -205,7 +206,7 @@ class downloader {
         }
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if($http_code === 404) {
+        if ($http_code === 404) {
             throw new Exception('File has been deleted');
         }
 
