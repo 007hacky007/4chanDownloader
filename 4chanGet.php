@@ -64,7 +64,7 @@ class chanGet
             }
             printf('[%s] Downloading %s... ', $this->postCount, $post->tim . $post->ext);
             try {
-                downloader::fetchFile(sprintf('https://i.4cdn.org/%s/%s', $post->board, $post->tim . $post->ext), $post->tim . $post->ext, $this->semantic_url);
+                downloader::fetchFile(sprintf('https://i.4cdn.org/%s/%s', $this->board, $post->tim . $post->ext), $post->tim . $post->ext, $this->semantic_url);
                 echo "OK\n";
             } catch (Throwable $e) {
                 echo $e->getMessage() . PHP_EOL;
