@@ -135,17 +135,15 @@ class downloader
         curl_setopt($ch, CURLOPT_ENCODING, 'gzip, deflate');
 
         $headers = array();
-        $headers[] = 'Authority: a.4cdn.org';
         $headers[] = 'Cache-Control: max-age=0';
         $headers[] = 'Sec-Fetch-Dest: empty';
-        $headers[] = 'If-Modified-Since: ' . gmdate(DATE_RFC2822, ($timestamp ? $timestamp : time()));
+        $headers[] = 'If-Modified-Since: ' . gmdate(DATE_RFC2822, ($timestamp ?: time()));
         $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36';
         $headers[] = 'Dnt: 1';
         $headers[] = 'Accept: */*';
         $headers[] = 'Origin: https://boards.4chan.org';
         $headers[] = 'Sec-Fetch-Site: cross-site';
         $headers[] = 'Sec-Fetch-Mode: cors';
-        $headers[] = 'Referer: https://boards.4chan.org/';
         $headers[] = 'Accept-Language: en-US,cs;q=0.9,en;q=0.8';
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_HEADER, 1);
@@ -168,7 +166,7 @@ class downloader
         }
 
 
-        return [isset($result) ? $result : [], $http_code, strtotime(downloader::getDate($header))];
+        return [$result ?? [], $http_code, strtotime(downloader::getDate($header))];
     }
 
     private static function getDate(string $header): string
